@@ -1,0 +1,210 @@
+//
+//  AuthModel.swift
+//  instabaov2
+//
+//  Created by Ariel Klevecz on 9/25/24.
+//
+import SwiftUI
+
+struct AppUser: Codable, Equatable {
+    let id: String
+    let username: String
+    let phoneNumber: String
+    // Add any other properties you need
+}
+
+struct PhoneResponseData: Codable {
+    let phoneNumber: String?
+    let action: String?
+    let error: String?
+}
+
+class AuthModel: ObservableObject {
+    static let shared = AuthModel()
+
+    private let tokenKey = "UserAccessToken"
+
+    @Published var currentUser: AppUser? {
+        didSet {
+            saveUser()
+        }
+    }
+    
+    @Published var phoneNumber: String = ""
+    @Published var requestInProgress: Bool = false
+    @Published var errorMessage: String = ""
+    @Published var showOTPView: Bool = false
+    
+    init() {
+        loadUser()
+    }
+    
+    private func saveUser() {
+        if let encoded = try? JSONEncoder().encode(currentUser) {
+            UserDefaults.standard.set(encoded, forKey: "CurrentUser")
+        }
+    }
+    
+    private func loadUser() {
+        if let userData = UserDefaults.standard.data(forKey: "CurrentUser"),
+           let user = try? JSONDecoder().decode(AppUser.self, from: userData) {
+            self.currentUser = user
+        }
+    }
+    
+    func signOut() {
+        currentUser = nil
+        UserDefaults.standard.removeObject(forKey: "CurrentUser")
+        // Add any other cleanup you need
+    }
+    
+    func updateUser(_ user: AppUser) {
+        DispatchQueue.main.async {
+            self.currentUser = user
+        }
+    }
+    
+    // Add other authentication-related methods as needed
+    func signIn(username: String, password: String) {
+        // Implement your sign-in logic here
+        // If successful, create and set the currentUser
+        // For example:
+        // if authenticateUser(username: username, password: password) {
+        //     let newUser = AppUser(id: "generatedID", username: username)
+        //     updateUser(newUser)
+        // }
+    }
+    
+    func storeToken(_ token: String) {
+        let data = Data(token.utf8)
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: tokenKey,
+            kSecValueData as String: data
+        ]
+        SecItemDelete(query as CFDictionary)
+        SecItemAdd(query as CFDictionary, nil)
+    }
+    
+    func getToken() -> String? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: tokenKey,
+            kSecReturnData as String: true
+        ]
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        
+        guard status == errSecSuccess,
+              let data = result as? Data,
+              let token = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+        return token
+    }
+    
+    func deleteToken() {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: tokenKey
+        ]
+        SecItemDelete(query as CFDictionary)
+    }
+    
+    func sendVerificationRequest(phoneNumber: String) {
+            guard let url = URL(string: "https://los.baos.haus/messaging/verification") else {
+                return
+            }
+            
+            let parameters = ["phoneNumber": phoneNumber]
+            guard let jsonData = try? JSONSerialization.data(withJSONObject: parameters, options: []) else {
+                return
+            }
+            
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.httpBody = jsonData
+            
+            DispatchQueue.main.async {
+                self.requestInProgress = true
+            }
+            
+            URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+                DispatchQueue.main.async {
+                    self?.requestInProgress = false
+                    self?.errorMessage = ""
+                }
+                
+                if let error = error {
+                    print("Error: \(error)")
+                } else if let data = data {
+                    do {
+                        let decoder = JSONDecoder()
+                        let responseData = try decoder.decode(PhoneResponseData.self, from: data)
+                        
+                        DispatchQueue.main.async {
+                            if let error = responseData.error {
+                                self?.errorMessage = error
+                            } else {
+                                self?.showOTPView = true
+                            }
+                        }
+                        print("Response: \(data)")
+                    } catch {
+                        print("Error decoding response: \(data)")
+                    }
+                }
+            }.resume()
+        }
+    
+    func validateVerificationCode(phoneNumber: String, otp: String) {
+       guard let url = URL(string: "https://los.baos.haus/messaging/verification") else {
+           return
+       }
+
+        let parameters = ["phoneNumber": phoneNumber, "code": otp]
+       guard let jsonData = try? JSONSerialization.data(withJSONObject: parameters, options: []) else {
+           return
+       }
+       
+       var request = URLRequest(url: url)
+       request.httpMethod = "POST"
+       request.httpBody = jsonData
+        
+        DispatchQueue.main.async {
+            self.requestInProgress = true
+        }
+       
+       URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                self.requestInProgress = false
+                self.errorMessage = ""
+            }
+           // Handle the response here
+           if let error = error {
+               print("Error: \(error)")
+           } else if let data = data {
+               // Process the response data here
+            do {
+                let decoder = JSONDecoder()
+                let responseData = try decoder.decode(ResponseData.self, from: data)
+                DispatchQueue.main.async {
+                    if (responseData.error != nil ) {
+                        self.errorMessage = responseData.error ?? "Code may be invalid"
+                    } else {
+                        print("Success")
+                        AuthModel.shared.storeToken(responseData.token)
+                        // or get some username and id from the response
+                        let user = AppUser(id:phoneNumber, username: phoneNumber, phoneNumber: phoneNumber)
+                        AuthModel.shared.updateUser(user)
+                    }
+                }
+            } catch {
+                self.errorMessage = "Code may be invalid"
+                print("Error decoding JSON: \(error)")
+            }
+
+           }
+       }.resume()
+    }
+}
