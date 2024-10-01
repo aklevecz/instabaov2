@@ -10,21 +10,22 @@ See the License.txt file for this sample’s licensing information.
 */
 
 import Foundation
+import AVFoundation
 
 struct Item: Identifiable {
-
     let id = UUID()
     let thumbnailUrl: URL
-    let fullsizeUrl: URL
+    let mediaUrl: URL
     let creationDate: String
     let description: String
     let city: String
     let state: String
+    let isVideo: Bool
 }
 
 extension Item: Equatable {
     static func ==(lhs: Item, rhs: Item) -> Bool {
-        return lhs.id == rhs.id && lhs.id == rhs.id
+        return lhs.id == rhs.id
     }
 }
 
@@ -42,6 +43,8 @@ class InstaModel: ObservableObject {
         let city: String?
         let state: String?
         let creationDate: String?
+        let isVideo: Bool?
+        let contentType: String?
     }
 
     @MainActor
@@ -61,21 +64,28 @@ class InstaModel: ObservableObject {
 
             let itemsData = try JSONDecoder().decode([ItemData].self, from: data)
             items = itemsData.compactMap { itemData in
-                guard let thumbnailUrl = URL(string: buildImageUrl(key: itemData.key, height: 700)),
-                      let fullsizeUrl = URL(string: buildImageUrl(key: itemData.key)) else {
+                let isVideo = itemData.contentType == "video/mp4" ? true : false
+                
+                guard let thumbnailUrl = isVideo ? URL(string: buildVideoUrl(key: itemData.key)) : URL(string: buildImageUrl(key: itemData.key, height: 700)),
+                      let mediaUrl = isVideo ? URL(string: buildVideoUrl(key: itemData.key)) : URL(string: buildImageUrl(key: itemData.key)) else {
                     return nil
                 }
                 
-                return Item(
+
+                
+                let item = Item(
                     thumbnailUrl: thumbnailUrl,
-                    fullsizeUrl: fullsizeUrl,
+                    mediaUrl: mediaUrl,
                     creationDate: itemData.creationDate ?? "2024",
                     description: itemData.description ?? "Default description",
                     city: itemData.city ?? "Los Angeles",
-                    state: itemData.state ?? "CA"
+                    state: itemData.state ?? "CA",
+                    isVideo: isVideo
                 )
+                
+                return item
             }
-            print(items)
+//            print(items)
         } catch {
             self.error = error
             print("Error: \(error)")
@@ -92,5 +102,9 @@ class InstaModel: ObservableObject {
             url += ",height=auto"
         }
         return "\(url)/\(r2StorageEndpoint)/\(key)"
+    }
+
+    private func buildVideoUrl(key: String) -> String {
+        return "\(r2StorageEndpoint)/\(key)"
     }
 }

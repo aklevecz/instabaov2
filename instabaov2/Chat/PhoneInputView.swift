@@ -34,17 +34,24 @@ struct PhoneInputView: View {
                 .contentShape(Rectangle())
                 .dismissKeyboardOnTap()
             VStack {
-                    Text("Enter your phone number")
-                        .font(.custom("PragmataProFraktur-Bold", size: 30))
-    //                    .padding()
-                    TextField("...", text: $phoneNumber)
-                        .font(.custom("PragmataProFraktur", size: 35))
+                    Text("Sign in")
+                    .font(.largeTitle)
+                    .fontWeight(.heavy)
+                    Text("Enter your phone number to receive a code")
+                    .font(.title2)
+                    .fontWeight(.heavy)
+                    .padding()
+                
+                    TextField("Phone number", text: $phoneNumber)
                         .keyboardType(.numberPad)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .padding()
-                    Button("Continue") {
+                Button(action: {
                         authModel.sendVerificationRequest(phoneNumber: phoneNumber)
+                    }) {
+                        Text(authModel.requestInProgress ? "Sending" : "Send Code")
                     }
+                    
                     .buttonStyle(GrowingButton())
                     .disabled(authModel.requestInProgress)
                     

@@ -63,7 +63,7 @@ class MessageModel: ObservableObject {
             urlRequest.httpMethod = "POST"
             urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
             urlRequest.httpBody = jsonData
-            print(jsonData)
+//            print(jsonData)
             URLSession.shared.dataTaskPublisher(for: urlRequest)
                 .map(\.data)
                 .decode(type: [APIMessage].self, decoder: JSONDecoder())

@@ -1,64 +1,43 @@
-//
-//  InstaView.swift
-//  instabaov2
-//
-//  Created by Ariel Klevecz on 9/24/24.
-//
-
 import SwiftUI
+import AVKit
 
 struct InstaView: View {
     @ObservedObject private var instaModel = InstaModel()
-    @State private var gridColumns = Array(repeating: GridItem(.flexible()), count: 1)
 
     var body: some View {
-        VStack {
-            ScrollView {
-                LazyVGrid(columns: gridColumns, spacing: 100) {
-                    ForEach(instaModel.items) { item in
-                        VStack {
-                            GeometryReader { geo in
-//                                NavigationLink(destination: DetailView(item: item)) {
-                                    InstaItem(width: geo.size.width, height: geo.size.height, item: item)
-//                                }
+        TopLineTitle(title: "Instabao")
+        ScrollView {
+            LazyVStack(spacing: 100) {
+                ForEach(instaModel.items) { item in
+                    VStack(spacing: 0) {
+                        InstaItem(item: item)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.description)
+                                .font(.headline)
+                            HStack {
+                                Text(item.city)
+                                Text(item.state)
                             }
-                            .cornerRadius(1.0)
-                            .aspectRatio(1, contentMode: .fill)
-                            .frame(height: 500, alignment: .topTrailing)
-                            
-                            VStack(alignment:.leading) {
-                                HStack {
-                                    Text(item.description)
-                                        .font(.system(size: 20, weight: .bold, design: .default))
-                                }
-                                .frame(maxWidth:.infinity, alignment: .leading)
-                                
-                                HStack {
-                                    Text(item.city)
-                                    Text(item.state)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                
-                                //                            Text(formattedDate(from: item.creationDate))
-                                //                            .foregroundColor(.gray)
-                                //                            .padding(0)
-                                
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 5)
-                            
+                            .font(.subheadline)
                         }
-                        
-                        
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
                     }
                 }
             }
-        }.task {
+//            .padding()
+        }
+        .task {
             await instaModel.fetchItems()
         }
-        Text("Instaview")
+        .refreshable {
+            Task {
+                await instaModel.fetchItems()
+            }
+        }
     }
-
 }
 
 #Preview {

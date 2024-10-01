@@ -69,9 +69,6 @@ struct ChatView: View {
                     messageModel.fetchMessages()
                 }
             }
-            Button("Sign out") {
-                authModel.signOut()
-            }
         }
     }
     

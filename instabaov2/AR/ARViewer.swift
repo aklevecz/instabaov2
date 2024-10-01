@@ -7,29 +7,29 @@
 import SwiftUI
 
 struct ARViewer: View {
-//    @StateObject private var arModel = ARModel()
+    @StateObject private var arModel = ARModel()
 
     var body: some View {
         ZStack {
-//            ARViewWrapper(arView: arModel.arView)
-//                .edgesIgnoringSafeArea(.all)
+            ARViewWrapper(arView: arModel.arView)
+                .edgesIgnoringSafeArea(.all)
 
             VStack {
-                Text("AR Camera View")
-                    .font(.headline)
-                    .padding()
-                    .background(Color.black.opacity(0.7))
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+//                Text("AR Camera View")
+//                    .font(.headline)
+//                    .padding()
+//                    .background(Color.black.opacity(0.7))
+//                    .foregroundColor(.white)
+//                    .cornerRadius(10)
                 Spacer()
             }
         }
-//        .onAppear {
-//            arModel.setup()
-//        }
-//        .onDisappear {
-//            arModel.stopSession()
-//        }
+        .onAppear {
+            arModel.setup()
+        }
+        .onDisappear {
+            arModel.stopSession()
+        }
     }
 }
 

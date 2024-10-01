@@ -10,6 +10,88 @@ import RealityKit
 import AVKit
 import Combine
 
+
+class ImageCache {
+    static let shared = ImageCache()
+    private let cache = NSCache<NSString, UIImage>()
+    
+    private init() {}
+    
+    func setImage(_ image: UIImage, forKey key: String) {
+        cache.setObject(image, forKey: key as NSString)
+    }
+    
+    func getImage(forKey key: String) -> UIImage? {
+        return cache.object(forKey: key as NSString)
+    }
+}
+
+class ImageDataCache {
+    static let shared = ImageDataCache()
+    private let cache = NSCache<NSString, NSData>()
+    
+    private init() {}
+    
+    func setImageData(_ data: Data, forKey key: String) {
+        cache.setObject(data as NSData, forKey: key as NSString)
+    }
+    
+    func getImageData(forKey key: String) -> Data? {
+        return cache.object(forKey: key as NSString) as Data?
+    }
+    
+    func fetchImage(named name: String, completion: @escaping (Data?) -> Void) {
+        if let cachedImageData = getImageData(forKey: name) {
+            print("Using cached image data for: \(name)")
+            completion(cachedImageData)
+            return
+        }
+
+        let urlString = "https://r2.baos.haus/bao2/\(name).png"
+        guard let url = URL(string: urlString) else {
+            print("Invalid URL: \(urlString)")
+            completion(nil)
+            return
+        }
+
+        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+            if let error = error {
+                print("Error fetching image \(name): \(error)")
+                completion(nil)
+                return
+            }
+
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode) else {
+                print("Invalid response for URL: \(urlString)")
+                completion(nil)
+                return
+            }
+
+            if let imageData = data {
+                self?.setImageData(imageData, forKey: name)
+                print("Successfully fetched and cached image data for: \(name)")
+                completion(imageData)
+            } else {
+                completion(nil)
+            }
+        }.resume()
+    }
+}
+
+struct VideoInfo {
+    let url: URL
+    var player: AVPlayer?
+    var status: VideoStatus = .notLoaded
+}
+
+enum VideoStatus {
+    case notLoaded
+    case loading
+    case ready
+    case failed
+}
+
 struct ARViewWrapper: UIViewRepresentable {
     let arView: ARView
 
@@ -21,54 +103,251 @@ struct ARViewWrapper: UIViewRepresentable {
 }
 
 class ARModel:NSObject, ObservableObject, ARSessionDelegate {
-//    var arView = ARView(frame: .zero)
+    @ObservedObject private var authModel = AuthModel.shared
+    var arView = ARView(frame: .zero)
     var contentEntity = AnchorEntity()
     private var cancellables: Set<AnyCancellable> = []
     private var model: ModelEntity?
+    @Published var referenceImages: Set<ARReferenceImage> = []
+    @Published var videos: [String: VideoInfo] = [:]
+    
+    private var imageCache: ImageCache {
+            return ImageCache.shared
+    }
+    
+    private var imageDataCache: ImageDataCache {
+            return ImageDataCache.shared
+        }
     
     func setup() {
-//        guard let referenceImages = ARReferenceImage.referenceImages(inGroupNamed: "ImageTracking", bundle: nil) else {
-//            fatalError("Missing expected asset catalog resources.")
-//        }
-//        arView.scene.addAnchor(contentEntity)
-//        let configuration = ARImageTrackingConfiguration()
-//        configuration.trackingImages = referenceImages
-//        configuration.maximumNumberOfTrackedImages = 1
-//        arView.session.delegate = self
-//        startSession(with: configuration)
+            arView.scene.addAnchor(contentEntity)
+            arView.session.delegate = self
+
+            let names = ["baodj", "baomotto"]
+            let dispatchGroup = DispatchGroup()
+
+            fetchReferenceImages(imageNames: names, dispatchGroup: dispatchGroup)
+            fetchVideos(videoNames: names, dispatchGroup: dispatchGroup)
+
+            // Start AR session after all images and videos are loaded
+            dispatchGroup.notify(queue: .main) {
+                self.startARSession()
+            }
+        }
+
+        private func fetchReferenceImages(imageNames: [String], dispatchGroup: DispatchGroup) {
+            for name in imageNames {
+                dispatchGroup.enter()
+                ImageDataCache.shared.fetchImage(named: name) { [weak self] imageData in
+                    defer { dispatchGroup.leave() }
+                    
+                    guard let self = self, let imageData = imageData else {
+                        print("Failed to fetch image data for: \(name)")
+                        return
+                    }
+                    
+                    self.createReferenceImage(from: imageData, named: name) { referenceImage in
+                        if let referenceImage = referenceImage {
+                            DispatchQueue.main.async {
+                                self.referenceImages.insert(referenceImage)
+                            }
+                            print("Added reference image for: \(name)")
+                        } else {
+                            print("Failed to create reference image for: \(name)")
+                        }
+                    }
+                }
+            }
+        }
+
+        private func fetchVideos(videoNames: [String], dispatchGroup: DispatchGroup) {
+            for name in videoNames {
+                dispatchGroup.enter()
+                let urlString = "https://r2.baos.haus/bao2/\(name).mp4"
+                guard let url = URL(string: urlString) else {
+                    print("Invalid video URL: \(urlString)")
+                    dispatchGroup.leave()
+                    continue
+                }
+
+                videos[name] = VideoInfo(url: url)
+                loadVideoAsset(for: name, dispatchGroup: dispatchGroup)
+            }
+        }
+
+        private func loadVideoAsset(for name: String, dispatchGroup: DispatchGroup) {
+            guard var videoInfo = videos[name] else {
+                dispatchGroup.leave()
+                return
+            }
+
+            videoInfo.status = .loading
+            videos[name] = videoInfo
+
+            let asset = AVURLAsset(url: videoInfo.url)
+            let requiredAssetKeys = ["playable", "tracks", "duration"]
+
+            asset.loadValuesAsynchronously(forKeys: requiredAssetKeys) { [weak self] in
+                defer { dispatchGroup.leave() } // Ensure dispatchGroup.leave() is called regardless of outcome
+
+                var error: NSError? = nil
+                for key in requiredAssetKeys {
+                    let status = asset.statusOfValue(forKey: key, error: &error)
+                    if status == .failed {
+                        DispatchQueue.main.async {
+                            videoInfo.status = .failed
+                            self?.videos[name] = videoInfo
+                            print("Failed to load video asset key \(key) for: \(name)")
+                        }
+                        return
+                    }
+                }
+
+                // Now load naturalSize and preferredTransform for the first video track
+                guard let videoTrack = asset.tracks(withMediaType: .video).first else {
+                    DispatchQueue.main.async {
+                        videoInfo.status = .failed
+                        self?.videos[name] = videoInfo
+                        print("No video tracks found for: \(name)")
+                    }
+                    return
+                }
+
+                let requiredTrackKeys = ["naturalSize", "preferredTransform"]
+                videoTrack.loadValuesAsynchronously(forKeys: requiredTrackKeys) {
+                    var error: NSError? = nil
+                    for key in requiredTrackKeys {
+                        let status = videoTrack.statusOfValue(forKey: key, error: &error)
+                        if status == .failed {
+                            DispatchQueue.main.async {
+                                videoInfo.status = .failed
+                                self?.videos[name] = videoInfo
+                                print("Failed to load video track key \(key) for: \(name)")
+                            }
+                            return
+                        }
+                    }
+
+                    // All required properties are loaded; proceed to create the player
+                    DispatchQueue.main.async {
+                        let playerItem = AVPlayerItem(asset: asset)
+                        let player = AVPlayer(playerItem: playerItem)
+                        videoInfo.player = player
+                        videoInfo.status = .ready
+                        self?.videos[name] = videoInfo
+                        print("Video loaded successfully for: \(name)")
+                    }
+                }
+            }
+        }
+
+    
+    private func createReferenceImage(from imageData: Data, named imageName: String, completion: @escaping (ARReferenceImage?) -> Void) {
+        guard let uiImage = UIImage(data: imageData) else {
+            print("Failed to create UIImage from data for: \(imageName)")
+            completion(nil)
+            return
+        }
+        
+        guard let cgImage = uiImage.cgImage else {
+            print("Failed to get CGImage from UIImage for: \(imageName)")
+            completion(nil)
+            return
+        }
+        
+        // You may want to adjust the physical width based on your use case
+        let referenceImage = ARReferenceImage(cgImage, orientation: .up, physicalWidth: 0.1)
+        referenceImage.name = imageName
+        completion(referenceImage)
+    }
+    
+    private func startARSession() {
+        let configuration = ARImageTrackingConfiguration()
+        configuration.trackingImages = self.referenceImages
+        configuration.maximumNumberOfTrackedImages = 5
+        arView.session.run(configuration, options: [.removeExistingAnchors, .resetTracking])
     }
     
     func startSession(with configuration: ARConfiguration) {
-//        arView.session.run(configuration, options: [.removeExistingAnchors, .resetTracking])
+        arView.session.run(configuration, options: [.removeExistingAnchors, .resetTracking])
     }
     
     func stopSession() {
-//        arView.session.pause()
+        arView.session.pause()
     }
     
-//    func session(_ session: ARSession, didAdd anchors: [ARAnchor]) {
-//        guard let imageAnchor = anchors.first as? ARImageAnchor else { return }
-//        
-//        print("Image anchor: \(imageAnchor.referenceImage.name)")
-//        guard let videoURL = Bundle.main.url(forResource: "baodj", withExtension: "mp4") else { return }
-//        let avPlayer = AVPlayer(url: videoURL)
-//        let videoMaterial = VideoMaterial(avPlayer: avPlayer)
-//        let referenceImage = imageAnchor.referenceImage
-//        let imageSize = referenceImage.physicalSize
-//        let anchorEntity = AnchorEntity(anchor: imageAnchor)
-//
-////        let scaleX = 1.0
-////        let scaleY = 1.0
-////        let entity = ModelEntity(mesh: .generatePlane(width: Float(imageSize.width * scaleX), depth: Float(imageSize.height * scaleY)), materials:[videoMaterial])
-////        anchorEntity.addChild(entity)
-////        contentEntity.addChild(anchorEntity)
-////        avPlayer.play()
-//        
+    func session(_ session: ARSession, didAdd anchors: [ARAnchor]) {
+            guard let imageAnchor = anchors.first as? ARImageAnchor else { return }
+            guard let imageName = imageAnchor.referenceImage.name else { return }
+            print("Image anchor: \(imageName)")
+            
+            guard let videoInfo = videos[imageName] else { return }
+            switch videoInfo.status {
+            case .ready:
+                displayVideo(videoInfo: videoInfo, for: imageAnchor)
+            case .notLoaded, .loading:
+                print("NO LOADED")
+                // If the video isn't ready yet, we can start loading it now
+//                loadVideoAsset(for: imageName)
+            case .failed:
+                print("Failed to load video for: \(imageName)")
+            }
+            
+            var currentSecrets = Set(authModel.collectedSecrets)
+            currentSecrets.insert(imageName)
+            authModel.updateCollectedSecrets(Array(currentSecrets))
+    }
+
+    private func displayVideo(videoInfo: VideoInfo, for imageAnchor: ARImageAnchor) {
+        guard let player = videoInfo.player else { return }
+
+        DispatchQueue.main.async {
+            player.seek(to: .zero)
+            player.play()
+
+            let videoMaterial = VideoMaterial(avPlayer: player)
+            let referenceImage = imageAnchor.referenceImage
+            let imageSize = referenceImage.physicalSize
+            let anchorEntity = AnchorEntity(anchor: imageAnchor)
+
+            let entity = ModelEntity(
+                mesh: .generatePlane(
+                    width: Float(imageSize.width),
+                    depth: Float(imageSize.height)
+                ),
+                materials: [videoMaterial]
+            )
+            anchorEntity.addChild(entity)
+            self.contentEntity.addChild(anchorEntity)
+
+            // Set up looping
+            NotificationCenter.default.addObserver(
+                forName: .AVPlayerItemDidPlayToEndTime,
+                object: player.currentItem,
+                queue: .main
+            ) { _ in
+                player.seek(to: .zero)
+                player.play()
+            }
+        }
+    }
+
+    
+        deinit {
+            NotificationCenter.default.removeObserver(self)
+        }
+}
+
+
+
+
+// THIS WAS INSIDE THE SESSION ADD FOR THE STUPID OVERLAY THING
+
 //        let mesh: MeshResource = .generatePlane(width: Float(imageSize.width), depth: Float(imageSize.height))
-//                
+//
 //        var material = SimpleMaterial()
 //
-//            if let baseResource = try? TextureResource.load(named: "baodj") {
+//        if let baseResource = try? TextureResource.load(named: imageName) {
 //                material.color = .init(tint: .white, texture: .init(baseResource))
 //                material.color.tint = material.color.tint.withAlphaComponent(0.0)
 //
@@ -81,32 +360,31 @@ class ARModel:NSObject, ObservableObject, ARSessionDelegate {
 //            if let model = model {
 //                anchorEntity.addChild(model)
 //                contentEntity.addChild(anchorEntity)
-//                startOpacityAnimation()
+//                startOpacityAnimation(imageName)
 //            }
-//        }
 
-        private func startOpacityAnimation() {
-            var opacity: Float = 0.0
-            let timer = Timer.publish(every: 0.01, on: .main, in: .common).autoconnect()
-            timer.sink { [weak self] _ in
-                guard let self = self, let model = self.model else { return }
-                
-                opacity += 0.01
-                if opacity >= 1.0 {
-                    opacity = 1.0
-                    guard let videoURL = Bundle.main.url(forResource: "baodj", withExtension: "mp4") else { return }
-                    let avPlayer = AVPlayer(url: videoURL)
-                    let videoMaterial = VideoMaterial(avPlayer: avPlayer)
-                    model.model?.materials = [videoMaterial]
-                    avPlayer.play()
-                    self.cancellables.removeAll()
-                }
-                
-                if var material = model.model?.materials.first as? SimpleMaterial {
-                    material.color.tint = material.color.tint.withAlphaComponent(CGFloat(opacity))
-                    model.model?.materials = [material]
-                }
-            }.store(in: &cancellables)
-    }
-}
+// END OF STUPID STUFF
 
+//        private func startOpacityAnimation(_ name: String? = nil) {
+//            var opacity: Float = 0.0
+//            let timer = Timer.publish(every: 0.01, on: .main, in: .common).autoconnect()
+//            timer.sink { [weak self] _ in
+//                guard let self = self, let model = self.model else { return }
+//
+//                opacity += 0.01
+//                if opacity >= 0.5 {
+//                    opacity = 0.5
+//                    guard let videoURL = Bundle.main.url(forResource: name, withExtension: "mp4") else { return }
+//                    let avPlayer = AVPlayer(url: videoURL)
+//                    let videoMaterial = VideoMaterial(avPlayer: avPlayer)
+//                    model.model?.materials = [videoMaterial]
+//                    avPlayer.play()
+//                    self.cancellables.removeAll()
+//                }
+//
+//                if var material = model.model?.materials.first as? SimpleMaterial {
+//                    material.color.tint = material.color.tint.withAlphaComponent(CGFloat(opacity))
+//                    model.model?.materials = [material]
+//                }
+//            }.store(in: &cancellables)
+//    }

@@ -30,13 +30,19 @@ class AuthModel: ObservableObject {
         }
     }
     
+    @Published var collectedSecrets: [String] = []
+
+    
     @Published var phoneNumber: String = ""
     @Published var requestInProgress: Bool = false
     @Published var errorMessage: String = ""
     @Published var showOTPView: Bool = false
     
+    
     init() {
         loadUser()
+        
+        loadCollectedSecrets()
     }
     
     private func saveUser() {
@@ -52,9 +58,30 @@ class AuthModel: ObservableObject {
         }
     }
     
+    private func saveCollectedSecrets() {
+        if let encoded = try? JSONEncoder().encode(collectedSecrets) {
+            UserDefaults.standard.set(encoded, forKey: "CollectedSecrets")
+        }
+    }
+    
+    private func loadCollectedSecrets() {
+        if let secretsData = UserDefaults.standard.data(forKey: "CollectedSecrets"),
+           let secrets = try? JSONDecoder().decode([String].self, from: secretsData) {
+            self.collectedSecrets = secrets
+        }
+    }
+    
+    func updateCollectedSecrets(_ secrets: [String]) {
+        DispatchQueue.main.async {
+            self.collectedSecrets = secrets
+            self.saveCollectedSecrets()
+        }
+    }
+    
     func signOut() {
         currentUser = nil
         UserDefaults.standard.removeObject(forKey: "CurrentUser")
+        UserDefaults.standard.removeObject(forKey: "CollectedSecrets")
         // Add any other cleanup you need
     }
     

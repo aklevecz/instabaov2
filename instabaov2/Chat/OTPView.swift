@@ -26,10 +26,14 @@ struct OTPView:View {
 
     var body: some View {
         VStack {
-            Text("Sooo what's the code?")
-                .font(.custom("PragmataProFraktur-Bold", size: 30))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()               
+            Text("Verify Code")
+            .font(.largeTitle)
+            .fontWeight(.heavy)
+            Text("Sooo what was that code?")
+            .font(.title2)
+            .fontWeight(.heavy)
+            .padding()
+        
 
             
             TextField("Code...", text: $otp)
@@ -39,7 +43,7 @@ struct OTPView:View {
             Button(action: {
                 authModel.validateVerificationCode(phoneNumber: phoneNumber, otp: otp)
             }) {
-                Text(authModel.requestInProgress ? "Sending" : "Sign in")
+                Text(authModel.requestInProgress ? "Sending" : "Verify")
             }.buttonStyle(GrowingButton())
 
 
