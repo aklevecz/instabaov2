@@ -63,7 +63,12 @@ struct ProfileView: View {
                     authModel.signOut()
                 }.buttonStyle(GrowingButton())
             }.padding()
+            .onDisappear() {
+                // REFACTOR
+//                authModel.showOTPView = false
+            }
         }
+
     }
     private func loadImage(for secret: String) {
             ImageDataCache.shared.fetchImage(named: secret) { imageData in

@@ -13,7 +13,7 @@ struct GameConfig: Codable {
 
 class ARManager: ObservableObject {
     static let shared = ARManager()
-    private let baseURL = "https://main.instabao-be.pages.dev"
+    private let baseURL = "https://instabao-be.pages.dev"
 
     private var activeId: String?
     @Published var config: GameConfig?

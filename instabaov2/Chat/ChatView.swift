@@ -19,8 +19,8 @@ struct ChatView: View {
     @ObservedObject private var authModel = AuthModel.shared
     
     @State private var showOTPView: Bool = false
-//    @State private var phoneNumber = "1234567890"
-    @State private var phoneNumber = ""
+    @State private var phoneNumber = "1234567890"
+//    @State private var phoneNumber = ""
     @State private var requestInProgress = false
     @State private var errorMessage = ""
     
@@ -43,7 +43,6 @@ struct ChatView: View {
             }
         }
         if authModel.currentUser?.phoneNumber != nil {
-            Text(authModel.currentUser?.phoneNumber ?? "Not in")
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
@@ -68,6 +67,10 @@ struct ChatView: View {
                 .onAppear {
                     guard let id = authModel.currentUser?.phoneNumber else { return }
                     messageModel.fetchMessages(id: id)
+                }
+                .onDisappear() {
+                    // REFACTOR
+//                    authModel.showOTPView = false
                 }
             }
         }

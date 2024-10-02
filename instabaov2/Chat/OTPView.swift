@@ -14,6 +14,13 @@ struct ResponseData: Codable {
     let error: String?
 }
 
+struct VerifiedResponse: Codable {
+    let token: String
+    let phoneNumber: String
+    let status: String
+    let error: String?
+}
+
 struct OTPView:View {
     let phoneNumber: String
     
@@ -21,7 +28,7 @@ struct OTPView:View {
     
     @State private var requestInProgress = false
     @State private var errorMessage = ""
-    @State private var otp = ""
+    @State private var otp = "1234"
     
 
     var body: some View {

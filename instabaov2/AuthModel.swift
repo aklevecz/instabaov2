@@ -20,6 +20,7 @@ struct PhoneResponseData: Codable {
 }
 
 class AuthModel: ObservableObject {
+    private let baseURL = "https://instabao-be.pages.dev"
     static let shared = AuthModel()
 
     private let tokenKey = "UserAccessToken"
@@ -34,6 +35,7 @@ class AuthModel: ObservableObject {
 
     
     @Published var phoneNumber: String = ""
+    private var cleanedPhoneNumber: String?
     @Published var requestInProgress: Bool = false
     @Published var errorMessage: String = ""
     @Published var showOTPView: Bool = false
@@ -72,7 +74,7 @@ class AuthModel: ObservableObject {
     }
     
     func saveSecretsOnServer(_ secrets: [String]) {
-        let urlString = "https://main.instabao-be.pages.dev/secrets"
+        let urlString = "\(baseURL)/secrets"
         let token = getToken()
         
         // Create URL from string
@@ -191,7 +193,9 @@ class AuthModel: ObservableObject {
     }
     
     func sendVerificationRequest(phoneNumber: String) {
-            guard let url = URL(string: "https://los.baos.haus/messaging/verification") else {
+//            let urlString = "https://los.baos.haus/messaging/verification"
+            let urlString = "\(baseURL)/auth"
+            guard let url = URL(string: urlString) else {
                 return
             }
             
@@ -226,6 +230,7 @@ class AuthModel: ObservableObject {
                                 self?.errorMessage = error
                             } else {
                                 self?.showOTPView = true
+                                self?.cleanedPhoneNumber = responseData.phoneNumber
                             }
                         }
                         print("Response: \(data)")
@@ -237,11 +242,12 @@ class AuthModel: ObservableObject {
         }
     
     func validateVerificationCode(phoneNumber: String, otp: String) {
-       guard let url = URL(string: "https://los.baos.haus/messaging/verification") else {
+        let urlString = "\(baseURL)/auth"
+        guard let url = URL(string: urlString) else {
            return
        }
-
-        let parameters = ["phoneNumber": phoneNumber, "code": otp]
+        print("Sending to \(urlString)")
+        let parameters = ["phoneNumber": cleanedPhoneNumber, "code": otp]
        guard let jsonData = try? JSONSerialization.data(withJSONObject: parameters, options: []) else {
            return
        }
@@ -266,7 +272,7 @@ class AuthModel: ObservableObject {
                // Process the response data here
             do {
                 let decoder = JSONDecoder()
-                let responseData = try decoder.decode(ResponseData.self, from: data)
+                let responseData = try decoder.decode(VerifiedResponse.self, from: data)
                 DispatchQueue.main.async {
                     if (responseData.error != nil ) {
                         self.errorMessage = responseData.error ?? "Code may be invalid"
@@ -274,7 +280,8 @@ class AuthModel: ObservableObject {
                         print("Success")
                         AuthModel.shared.storeToken(responseData.token)
                         // or get some username and id from the response
-                        let user = AppUser(id:phoneNumber, username: phoneNumber, phoneNumber: phoneNumber)
+                        let resPhoneNumber = responseData.phoneNumber
+                        let user = AppUser(id:resPhoneNumber, username: resPhoneNumber, phoneNumber: resPhoneNumber)
                         AuthModel.shared.updateUser(user)
                     }
                 }
