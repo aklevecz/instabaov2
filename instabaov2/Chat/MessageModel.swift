@@ -23,29 +23,29 @@ class MessageModel: ObservableObject {
     private var cancellables: Set<AnyCancellable> = []
     private let urlString = "https://los.baos.haus/messaging/bao-convo"
 
-    func fetchMessages() {
-        guard let url = URL(string: urlString) else {
-            print("Invalid URL")
-            return
-        }
-        
-        URLSession.shared.dataTaskPublisher(for: url)
-            .map(\.data)
-            .decode(type: [APIMessage].self, decoder: JSONDecoder())
-            .receive(on: DispatchQueue.main)
-            .sink { completion in
-                switch completion {
-                case .finished:
-                    break
-                case .failure(let error):
-                    print("Error: \(error)")
+    func fetchMessages(id: String) {
+            Task {
+                do {
+                    let messages = try await fetchMessagesAsync(id: id)
+                    print(messages)
+                    await MainActor.run {
+                        self.messages = messages
+                    }
+                } catch {
+                    print("Error fetching messages: \(error)")
                 }
-            } receiveValue: { [weak self] apiMessages in
-//                print(apiMessages)
-                self?.messages = self?.transformToMessages(apiMessages) ?? []
             }
-            .store(in: &cancellables)
-    }
+        }
+
+        private func fetchMessagesAsync(id: String) async throws -> [Message] {
+            guard let url = URL(string: "\(urlString)?id=\(id)") else {
+                throw URLError(.badURL)
+            }
+
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let apiMessages = try JSONDecoder().decode([APIMessage].self, from: data)
+            return transformToMessages(apiMessages)
+        }
     
     func sendMessage(id: String, message: String) {
             guard let url = URL(string: urlString) else {

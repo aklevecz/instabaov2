@@ -24,7 +24,7 @@ struct InstaView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
-                    }
+                    }.frame(minHeight:600)
                 }
             }
 //            .padding()

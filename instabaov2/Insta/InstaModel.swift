@@ -34,7 +34,7 @@ class InstaModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var error: Error?
 
-    let baostagramListUrl = "https://los.baos.haus/instabao/images"
+    let baostagramListUrl = "https://main.instabao-be.pages.dev/images"
     let r2StorageEndpoint: String = "https://r2.baos.haus"
 
     struct ItemData: Codable {

@@ -8,24 +8,30 @@ import SwiftUI
 
 struct ARViewer: View {
     @StateObject private var arModel = ARModel()
+    @EnvironmentObject var arManager: ARManager
+
+    @State private var isLoading = true
 
     var body: some View {
         ZStack {
-            ARViewWrapper(arView: arModel.arView)
-                .edgesIgnoringSafeArea(.all)
+            if isLoading {
+                ProgressView("Loading configuration...")
+            } else {
+                ARViewWrapper(arView: arModel.arView)
+                    .edgesIgnoringSafeArea(.all)
 
-            VStack {
-//                Text("AR Camera View")
-//                    .font(.headline)
-//                    .padding()
-//                    .background(Color.black.opacity(0.7))
-//                    .foregroundColor(.white)
-//                    .cornerRadius(10)
-                Spacer()
+                VStack {
+                    Spacer()
+                }
             }
         }
-        .onAppear {
-            arModel.setup()
+        .task {
+            guard let config = arManager.config else {
+                print("Missing config :(")
+                return
+            }
+            arModel.setup(config: config)
+            isLoading = false
         }
         .onDisappear {
             arModel.stopSession()

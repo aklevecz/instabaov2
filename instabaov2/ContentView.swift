@@ -1,10 +1,3 @@
-//
-//  ContentView.swift
-//  instabaov2
-//
-//  Created by Ariel Klevecz on 9/23/24.
-//
-
 import SwiftUI
 
 struct TopLineTitle: View {
@@ -15,8 +8,6 @@ struct TopLineTitle: View {
             .font(.headline)
             .padding()
             .frame(maxWidth: .infinity)
-//            .background(Color(UIColor.systemBackground))
-//            .shadow(color: Color.black.opacity(0.1), radius: 1, y: 1)
     }
 }
 
@@ -29,6 +20,7 @@ enum NavTab {
 
 struct ContentView: View {
     @State var selection: NavTab = .chat
+    @EnvironmentObject var arManager: ARManager
     
     init() {
         UITabBar.appearance().unselectedItemTintColor = .gray
@@ -37,29 +29,46 @@ struct ContentView: View {
     
     var body: some View {
         TabView(selection: $selection) {
-            Tab("Chat", systemImage:"bubble.fill", value: .chat) {
-                ZStack(alignment: .top) {
-                    ChatView()
-                        .padding(.top, 40)
-                    TopLineTitle(title: "Chat")
-                }
+            ZStack(alignment: .top) {
+                ChatView()
+                    .padding(.top, 40)
+                TopLineTitle(title: "Chat")
             }
+            .tabItem {
+                Image(systemName: "bubble.fill")
+                Text("Chat")
+            }
+            .tag(NavTab.chat)
             
-            Tab("Instabao", systemImage:"photo.fill", value:.instaBao) {
+            VStack {
                 InstaView()
+            }.tabItem {
+                Image(systemName: "photo.fill")
+                Text("Instabao")
             }
+            .tag(NavTab.instaBao)
             
-            Tab("AR", systemImage:"plus.viewfinder", value: .ar) {
-                TopLineTitle(title: "AR")
+            ZStack(alignment: .top) {
                 ARViewer()
+                TopLineTitle(title: "AR")
             }
+            .tabItem {
+                Image(systemName: "plus.viewfinder")
+                Text("AR")
+            }
+            .tag(NavTab.ar)
             
-            Tab("Profile", systemImage:"person.fill", value: .profile) {
+            VStack {
                 ProfileView()
             }
-         }.edgesIgnoringSafeArea(.top)
+            .tabItem {
+                Image(systemName: "person.fill")
+                Text("Profile")
+            }
+            .tag(NavTab.profile)
+        }
+        .edgesIgnoringSafeArea(.top)
     }
-    
 }
 
 #Preview {

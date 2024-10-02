@@ -71,9 +71,61 @@ class AuthModel: ObservableObject {
         }
     }
     
+    func saveSecretsOnServer(_ secrets: [String]) {
+        let urlString = "https://main.instabao-be.pages.dev/secrets"
+        let token = getToken()
+        
+        // Create URL from string
+        guard let url = URL(string: urlString) else {
+            print("Invalid URL")
+            return
+        }
+
+        // Create URLRequest and set method to POST
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+
+        // Create header with token
+        request.setValue(token, forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        // Put secrets in the body
+        let body: [String: Any] = ["secrets": secrets]
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: body, options: [])
+            request.httpBody = jsonData
+        } catch {
+            print("Error serializing JSON: \(error)")
+            return
+        }
+
+        // Make POST request to the URL
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            // Handle response or error
+            if let error = error {
+                print("Error making request: \(error)")
+                return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                print("Response status code: \(httpResponse.statusCode)")
+            }
+            
+            if let data = data {
+                // Optionally handle response data
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("Response data: \(responseString)")
+                }
+            }
+        }
+        task.resume()
+    }
+
+    
     func updateCollectedSecrets(_ secrets: [String]) {
         DispatchQueue.main.async {
             self.collectedSecrets = secrets
+            self.saveSecretsOnServer(secrets)
             self.saveCollectedSecrets()
         }
     }
@@ -81,7 +133,7 @@ class AuthModel: ObservableObject {
     func signOut() {
         currentUser = nil
         UserDefaults.standard.removeObject(forKey: "CurrentUser")
-        UserDefaults.standard.removeObject(forKey: "CollectedSecrets")
+//        UserDefaults.standard.removeObject(forKey: "CollectedSecrets")
         // Add any other cleanup you need
     }
     
