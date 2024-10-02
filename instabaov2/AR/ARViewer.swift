@@ -7,7 +7,7 @@
 import SwiftUI
 
 struct ARViewer: View {
-    @StateObject private var arModel = ARModel()
+//    @StateObject private var arModel = ARModel()
     @EnvironmentObject var arManager: ARManager
 
     @State private var isLoading = true
@@ -17,8 +17,8 @@ struct ARViewer: View {
             if isLoading {
                 ProgressView("Loading configuration...")
             } else {
-                ARViewWrapper(arView: arModel.arView)
-                    .edgesIgnoringSafeArea(.all)
+//                ARViewWrapper(arView: arModel.arView)
+//                    .edgesIgnoringSafeArea(.all)
 
                 VStack {
                     Spacer()
@@ -30,11 +30,11 @@ struct ARViewer: View {
                 print("Missing config :(")
                 return
             }
-            arModel.setup(config: config)
+//            arModel.setup(config: config)
             isLoading = false
         }
         .onDisappear {
-            arModel.stopSession()
+//            arModel.stopSession()
         }
     }
 }

@@ -31,6 +31,11 @@ extension Item: Equatable {
 
 class InstaModel: ObservableObject {
     @Published var items: [Item] = []
+    @Published var displayedItems: [Item] = []
+
+    private let itemsPerPage = 5
+    private var currentPage = 0
+    
     @Published var isLoading: Bool = false
     @Published var error: Error?
 
@@ -86,6 +91,8 @@ class InstaModel: ObservableObject {
                 return item
             }
 //            print(items)
+            currentPage = 0
+            loadNextPage()
         } catch {
             self.error = error
             print("Error: \(error)")
@@ -93,6 +100,18 @@ class InstaModel: ObservableObject {
 
         isLoading = false
     }
+    
+    func loadNextPage() {
+        print("Loading next page")
+            let startIndex = currentPage * itemsPerPage
+            let endIndex = min(startIndex + itemsPerPage, items.count)
+            
+            if startIndex < items.count {
+                let newItems = Array(items[startIndex..<endIndex])
+                displayedItems.append(contentsOf: newItems)
+                currentPage += 1
+            }
+        }
 
     private func buildImageUrl(key: String, height: Int? = nil) -> String {
         var url = "https://baos.haus/cdn-cgi/image/width=auto,quality=100,fit=contain"

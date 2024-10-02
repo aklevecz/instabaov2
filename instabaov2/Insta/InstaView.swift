@@ -8,7 +8,7 @@ struct InstaView: View {
         TopLineTitle(title: "Instabao")
         ScrollView {
             LazyVStack(spacing: 100) {
-                ForEach(instaModel.items) { item in
+                ForEach(instaModel.displayedItems) { item in
                     VStack(spacing: 0) {
                         InstaItem(item: item)
                         
@@ -25,6 +25,12 @@ struct InstaView: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                     }.frame(minHeight:600)
+                }
+                if !instaModel.displayedItems.isEmpty {
+                    ProgressView()
+                        .onAppear {
+                            instaModel.loadNextPage()
+                        }
                 }
             }
 //            .padding()
