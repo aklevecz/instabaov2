@@ -21,13 +21,14 @@ struct SendMessageRequest: Codable {
 class MessageModel: ObservableObject {
     @Published var messages: [Message] = []
     private var cancellables: Set<AnyCancellable> = []
-    private let urlString = "https://los.baos.haus/messaging/bao-convo"
+//    private let urlString = "https://los.baos.haus/messaging/bao-convo"
+    private let urlString = "https://instabao-be.pages.dev/messages/bao-convo"
 
     func fetchMessages(id: String) {
             Task {
                 do {
+                    print("Fetching messages...")
                     let messages = try await fetchMessagesAsync(id: id)
-                    print(messages)
                     await MainActor.run {
                         self.messages = messages
                     }
@@ -76,7 +77,9 @@ class MessageModel: ObservableObject {
                         print("Error: \(error)")
                     }
                 } receiveValue: { [weak self] apiMessages in
-                    self?.messages = self?.transformToMessages(apiMessages) ?? []
+                    DispatchQueue.main.async {
+                        self?.messages = self?.transformToMessages(apiMessages) ?? []
+                    }
                 }
                 .store(in: &cancellables)
         }

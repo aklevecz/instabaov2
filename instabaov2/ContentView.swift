@@ -7,7 +7,7 @@ struct TopLineTitle: View {
         Text(title)
             .font(.headline)
             .padding()
-            .frame(maxWidth: .infinity)
+//            .frame(maxWidth: .infinity)
     }
 }
 
@@ -21,6 +21,8 @@ enum NavTab {
 struct ContentView: View {
     @State var selection: NavTab = .chat
     @EnvironmentObject var arManager: ARManager
+    @EnvironmentObject var authModel: AuthModel
+    @EnvironmentObject var messageModel: MessageModel
     
     init() {
         UITabBar.appearance().unselectedItemTintColor = .gray
@@ -30,9 +32,10 @@ struct ContentView: View {
     var body: some View {
         TabView(selection: $selection) {
             ZStack(alignment: .top) {
+                Image("bao-head-60")
                 ChatView()
-                    .padding(.top, 40)
-                TopLineTitle(title: "Chat")
+                    .padding(.top, 70)
+//                TopLineTitle(title: "Chat")
             }
             .tabItem {
                 Image(systemName: "bubble.fill")
@@ -50,7 +53,7 @@ struct ContentView: View {
             
             ZStack(alignment: .top) {
                 ARViewer()
-                TopLineTitle(title: "AR")
+                Image("bao-ar-icon-60")
             }
             .tabItem {
                 Image(systemName: "plus.viewfinder")
@@ -68,9 +71,22 @@ struct ContentView: View {
             .tag(NavTab.profile)
         }
         .edgesIgnoringSafeArea(.top)
+        .onChange(of: authModel.currentUser) { newUser in  // Removed optional chaining
+            print("User changed: \(String(describing: newUser?.phoneNumber))")
+            if let id = newUser?.phoneNumber {
+                messageModel.fetchMessages(id: id)
+            } else {
+                authModel.showOTPView = false
+            }
+        }
+        .onAppear {
+            if let id = authModel.currentUser?.phoneNumber {
+                messageModel.fetchMessages(id: id)
+            }
+        }
     }
 }
 
 #Preview {
-    ContentView()
+    ContentView().environmentObject(AuthModel()).environmentObject(ARManager()).environmentObject(MessageModel())
 }

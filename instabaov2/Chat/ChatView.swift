@@ -16,17 +16,24 @@ struct ChatView: View {
     
 //    @ObservedObject private var messageModel = MessageModel()
     @EnvironmentObject var messageModel: MessageModel
-    @ObservedObject private var authModel = AuthModel.shared
+//    @ObservedObject private var authModel = AuthModel.shared
+    @EnvironmentObject var authModel: AuthModel
     
     @State private var showOTPView: Bool = false
-    @State private var phoneNumber = "1234567890"
+    @State private var phoneNumber = ""
 //    @State private var phoneNumber = ""
     @State private var requestInProgress = false
     @State private var errorMessage = ""
     
+    @State private var isWaitingForResponse = false
+    
     private var cancellable: AnyCancellable? = nil
     
     var body: some View {
+//        Button("Show Bubbe") {
+//            isWaitingForResponse = true
+//        }
+        Text(isWaitingForResponse ? "Waiting for response..." : "")
         if requestInProgress {
             ProgressView()
                 .scaleEffect(5)
@@ -52,22 +59,50 @@ struct ChatView: View {
                                 .id(message.id)
                                 .padding(.bottom, 8)
                         }
-                    }
-                    .padding()
+                        if isWaitingForResponse {
+                                LoadingBubble()
+                                    .padding(.bottom, 8)
+                                    .transition(.opacity)
+                                    .id("loadingBubble")
+                            }
+                        }
+                        .padding()
+                        .animation(.default, value: isWaitingForResponse)
                 }
                 .scrollDismissesKeyboard(.interactively)
+
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     textFieldContent(with: proxy)
+                        .gesture(DragGesture().onChanged { _ in
+                                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        })
                 }
                 .onReceive(messageModel.$messages) { messages in
                     withAnimation {
-                        proxy.scrollTo(messages.last?.id)
+                        if let lastMessage = messages.last {
+                            if lastMessage.direction == .outgoing {
+                                proxy.scrollTo("loadingBubble", anchor: .bottom)
+                            } else {
+                                isWaitingForResponse = false
+                                proxy.scrollTo(lastMessage.id, anchor: .bottom)
+                            }
+                        }
+//                        if isWaitingForResponse {
+//                            proxy.scrollTo("loadingBubble", anchor: .bottom)
+//                            isWaitingForResponse = false
+//                        } else if let lastId = messages.last?.id {
+//                            proxy.scrollTo(lastId, anchor: .bottom)
+//                        }
                     }
                 }
-                .onAppear {
-                    guard let id = authModel.currentUser?.phoneNumber else { return }
-                    messageModel.fetchMessages(id: id)
-                }
+//                .onAppear {
+//                    Task {
+//                        print("ON APPEAR IN CHAT VIEW TRIGGERED")
+//                        guard let id = authModel.currentUser?.phoneNumber else { return }
+//                        messageModel.fetchMessages(id: id)
+//                    }
+//                }
+
                 .onDisappear() {
                     // REFACTOR
 //                    authModel.showOTPView = false
@@ -89,7 +124,11 @@ struct ChatView: View {
                 .onReceive(Just(isFocused)) { _ in
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         withAnimation {
-                            proxy.scrollTo(messageModel.messages.last?.id, anchor: .bottom)
+                            if isWaitingForResponse {
+                                proxy.scrollTo("loadingBubble", anchor: .bottom)
+                            } else {
+                                proxy.scrollTo(messageModel.messages.last?.id, anchor: .bottom)
+                            }
                         }
                     }
                 }
@@ -120,6 +159,7 @@ struct ChatView: View {
     
     private func submit() {
         guard !text.isEmpty else { return }
+        isWaitingForResponse = true
         guard let phoneNumber = authModel.currentUser?.phoneNumber else {return}
         let message = Message(direction: .outgoing, kind: .text(text))
         messageModel.sendMessage(id: phoneNumber, message: text)
@@ -129,6 +169,7 @@ struct ChatView: View {
         withAnimation(.smooth(duration: 0.2)) {
             sentMessage = nil
             messageModel.messages.append(message)
+            
         }
     }
 }
@@ -138,7 +179,8 @@ struct ChatView: View {
         var body: some View {
             NavigationStack {
                 ChatView()
-                    .navigationTitle("Chat")
+                    .environmentObject(AuthModel())
+                    .environmentObject(MessageModel())
             }
         }
     }

@@ -15,7 +15,7 @@ struct GrowingButton: ButtonStyle {
             .background(colorScheme == .light ? Color.white : Color.black)
             .border(colorScheme == .light ? Color.black : Color.white, width:2)
             .foregroundColor(colorScheme == .light ? Color.black : Color.white)
-            .fontWeight(.bold)
+//            .fontWeight(.bold)
             .scaleEffect(configuration.isPressed ? 1.2 : 1)
             .animation(.easeOut(duration: 0.2), value: configuration.isPressed)
     }

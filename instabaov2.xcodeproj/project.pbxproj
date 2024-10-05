@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		57179E232CAF4D5600BA9639 /* BaoLaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 57179E222CAF4D5600BA9639 /* BaoLaunchScreen.storyboard */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		57179D492CA25FC100BA9639 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,11 +31,25 @@
 		57179D382CA25FC100BA9639 /* instabaov2.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = instabaov2.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		57179D482CA25FC100BA9639 /* instabaov2Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = instabaov2Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		57179D522CA25FC100BA9639 /* instabaov2UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = instabaov2UITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		57179E222CAF4D5600BA9639 /* BaoLaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = BaoLaunchScreen.storyboard; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		57179E1B2CAF49F500BA9639 /* Exceptions for "instabaov2" folder in "instabaov2" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 57179D372CA25FC100BA9639 /* instabaov2 */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		57179D3A2CA25FC100BA9639 /* instabaov2 */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				57179E1B2CAF49F500BA9639 /* Exceptions for "instabaov2" folder in "instabaov2" target */,
+			);
 			path = instabaov2;
 			sourceTree = "<group>";
 		};
@@ -75,6 +93,7 @@
 		57179D2F2CA25FC100BA9639 = {
 			isa = PBXGroup;
 			children = (
+				57179E222CAF4D5600BA9639 /* BaoLaunchScreen.storyboard */,
 				57179D3A2CA25FC100BA9639 /* instabaov2 */,
 				57179D4B2CA25FC100BA9639 /* instabaov2Tests */,
 				57179D552CA25FC100BA9639 /* instabaov2UITests */,
@@ -212,6 +231,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				57179E232CAF4D5600BA9639 /* BaoLaunchScreen.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -393,16 +413,19 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = instabaov2/instabaov2.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"instabaov2/Preview Content\"";
 				DEVELOPMENT_TEAM = L7V38L8N6S;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = instabaov2/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = instaBao;
 				INFOPLIST_KEY_NSCameraUsageDescription = "image tracking";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = BaoLaunchScreen.storyboard;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
@@ -428,16 +451,19 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = instabaov2/instabaov2.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"instabaov2/Preview Content\"";
 				DEVELOPMENT_TEAM = L7V38L8N6S;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = instabaov2/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = instaBao;
 				INFOPLIST_KEY_NSCameraUsageDescription = "image tracking";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = BaoLaunchScreen.storyboard;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.6;

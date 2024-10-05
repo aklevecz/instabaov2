@@ -28,6 +28,7 @@ class ImageDataCache {
         }
 
         let urlString = "https://r2.baos.haus/bao2/\(name).png"
+        print(urlString)
         guard let url = URL(string: urlString) else {
             print("Invalid URL: \(urlString)")
             completion(nil)

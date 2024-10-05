@@ -5,7 +5,7 @@ struct InstaView: View {
     @ObservedObject private var instaModel = InstaModel()
 
     var body: some View {
-        TopLineTitle(title: "Instabao")
+        Image("bao-insta-head-60")
         ScrollView {
             LazyVStack(spacing: 100) {
                 ForEach(instaModel.displayedItems) { item in

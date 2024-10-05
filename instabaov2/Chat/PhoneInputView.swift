@@ -22,10 +22,27 @@ extension View {
     }
 }
 
+struct CustomRoundedTextFieldStyle: TextFieldStyle {
+    func _body(configuration: TextField<Self._Label>) -> some View {
+        configuration
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 15)
+                    .stroke(Color.black, lineWidth: 1)
+            )
+            .padding(.horizontal, 24)
+            .font(.system(size:28))
+            .padding()
+            .multilineTextAlignment(.center)
+
+    }
+}
+
 struct PhoneInputView: View {
     @Binding var phoneNumber: String
     
-    @ObservedObject var authModel = AuthModel.shared
+//    @ObservedObject var authModel = AuthModel.shared
+    @EnvironmentObject var authModel: AuthModel
 
     
     var body: some View {
@@ -34,18 +51,21 @@ struct PhoneInputView: View {
                 .contentShape(Rectangle())
                 .dismissKeyboardOnTap()
             VStack {
+                    Image("bao-head-120")
                     Text("Sign in")
                     .font(.largeTitle)
-                    .fontWeight(.heavy)
+                    .fontWeight(.semibold)
                     Text("Enter your phone number to receive a code")
                     .font(.title2)
-                    .fontWeight(.heavy)
+                    .fontWeight(.semibold)
                     .padding()
+                    .padding(.horizontal,12)
                 
                     TextField("Phone number", text: $phoneNumber)
                         .keyboardType(.numberPad)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .padding()
+                        .textFieldStyle(CustomRoundedTextFieldStyle())
+
+                
                 Button(action: {
                         authModel.sendVerificationRequest(phoneNumber: phoneNumber)
                     }) {
@@ -70,7 +90,7 @@ struct PhoneInputView: View {
     struct StatePreview: View {
         @State var phoneNumber: String = ""
         var body: some View {
-            PhoneInputView(phoneNumber: $phoneNumber)
+            PhoneInputView(phoneNumber: $phoneNumber).environmentObject(AuthModel())
         }
     }
     return StatePreview()

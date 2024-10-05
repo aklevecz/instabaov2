@@ -43,7 +43,6 @@ class AuthModel: ObservableObject {
     
     init() {
         loadUser()
-        
         loadCollectedSecrets()
     }
     
@@ -72,6 +71,8 @@ class AuthModel: ObservableObject {
             self.collectedSecrets = secrets
         }
     }
+    
+
     
     func saveSecretsOnServer(_ secrets: [String]) {
         let urlString = "\(baseURL)/secrets"
@@ -282,7 +283,8 @@ class AuthModel: ObservableObject {
                         // or get some username and id from the response
                         let resPhoneNumber = responseData.phoneNumber
                         let user = AppUser(id:resPhoneNumber, username: resPhoneNumber, phoneNumber: resPhoneNumber)
-                        AuthModel.shared.updateUser(user)
+//                        AuthModel.shared.updateUser(user)
+                        self.updateUser(user)
                     }
                 }
             } catch {

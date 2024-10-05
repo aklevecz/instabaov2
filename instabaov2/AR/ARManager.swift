@@ -23,7 +23,8 @@ class ARManager: ObservableObject {
     }
     
     func fetchActiveConfig() {
-        guard let url = URL(string: "\(baseURL)/ar") else {
+        let timestamp = Int(Date().timeIntervalSince1970)
+        guard let url = URL(string: "\(baseURL)/ar?timestamp=\(timestamp)") else {
             print("Invalid URL")
             return
         }
@@ -41,7 +42,6 @@ class ARManager: ObservableObject {
             
             do {
                 let decoder = JSONDecoder()
-                print(data)
                 let config = try decoder.decode(GameConfig.self, from: data)
                 
                 DispatchQueue.main.async {
@@ -53,6 +53,38 @@ class ARManager: ObservableObject {
                 print("fetchActiveConfig Error decoding config: \(error.localizedDescription)")
             }
         }.resume()
+    }
+    
+    enum FetchError: Error {
+        case invalidURL
+        case networkError(Error)
+        case invalidResponse
+        case decodingError(Error)
+    }
+    
+    func fetchConfigAsync() async throws -> GameConfig {
+        guard let url = URL(string: "https://instabao-be.pages.dev/ar") else {
+            throw FetchError.invalidURL
+        }
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode) else {
+                throw FetchError.invalidResponse
+            }
+            
+            let decoder = JSONDecoder()
+            do {
+                let config = try decoder.decode(GameConfig.self, from: data)
+                return config
+            } catch {
+                throw FetchError.decodingError(error)
+            }
+        } catch {
+            throw FetchError.networkError(error)
+        }
     }
     
     func fetchActiveId() {

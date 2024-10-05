@@ -24,28 +24,31 @@ struct VerifiedResponse: Codable {
 struct OTPView:View {
     let phoneNumber: String
     
-    @ObservedObject var authModel = AuthModel.shared
+//    @ObservedObject var authModel = AuthModel.shared
+    @EnvironmentObject var authModel: AuthModel
     
     @State private var requestInProgress = false
     @State private var errorMessage = ""
-    @State private var otp = "1234"
+    @State private var otp = ""
     
 
     var body: some View {
         VStack {
+            Image("bao-head-120")
             Text("Verify Code")
             .font(.largeTitle)
-            .fontWeight(.heavy)
+            .fontWeight(.semibold)
             Text("Sooo what was that code?")
             .font(.title2)
-            .fontWeight(.heavy)
+            .fontWeight(.semibold)
             .padding()
         
 
             
             TextField("Code...", text: $otp)
             .keyboardType(.numberPad)
-            .padding()
+            .textFieldStyle(CustomRoundedTextFieldStyle())
+
             
             Button(action: {
                 authModel.validateVerificationCode(phoneNumber: phoneNumber, otp: otp)
@@ -53,6 +56,13 @@ struct OTPView:View {
                 Text(authModel.requestInProgress ? "Sending" : "Verify")
             }.buttonStyle(GrowingButton())
 
+            Button("Resend code") {
+                authModel.sendVerificationRequest(phoneNumber: phoneNumber)
+            }.padding()
+            
+            if (!authModel.requestInProgress) {
+                ProgressView()
+            }
 
         Text(errorMessage).foregroundColor(.red)
         }
@@ -62,5 +72,5 @@ struct OTPView:View {
     }
 }
 #Preview {
-    OTPView(phoneNumber: "1234567890")
+    OTPView(phoneNumber: "1234567890").environmentObject(AuthModel())
 }
