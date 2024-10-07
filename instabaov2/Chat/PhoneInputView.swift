@@ -57,7 +57,6 @@ struct PhoneInputView: View {
                     .fontWeight(.semibold)
                     Text("Enter your phone number to receive a code")
                     .font(.title2)
-                    .fontWeight(.semibold)
                     .padding()
                     .padding(.horizontal,12)
                 

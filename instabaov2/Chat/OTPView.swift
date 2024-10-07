@@ -27,6 +27,7 @@ struct OTPView:View {
 //    @ObservedObject var authModel = AuthModel.shared
     @EnvironmentObject var authModel: AuthModel
     
+    @State private var showResendCode = false
     @State private var requestInProgress = false
     @State private var errorMessage = ""
     @State private var otp = ""
@@ -40,9 +41,8 @@ struct OTPView:View {
             .fontWeight(.semibold)
             Text("Sooo what was that code?")
             .font(.title2)
-            .fontWeight(.semibold)
             .padding()
-        
+
 
             
             TextField("Code...", text: $otp)
@@ -56,18 +56,32 @@ struct OTPView:View {
                 Text(authModel.requestInProgress ? "Sending" : "Verify")
             }.buttonStyle(GrowingButton())
 
-            Button("Resend code") {
-                authModel.sendVerificationRequest(phoneNumber: phoneNumber)
-            }.padding()
-            
-            if (!authModel.requestInProgress) {
+            if (showResendCode && !authModel.requestInProgress) {
+                Button("Resend code") {
+                    authModel.sendVerificationRequest(phoneNumber: phoneNumber)
+                }.padding()
+            } else if (showResendCode) {
                 ProgressView()
             }
+            
+            VStack {
+                Text("Code was sent to: \(phoneNumber)")
+                Button("Change phone number") {
+                    authModel.showOTPView = false
+                }
+            }.padding()
+
 
         Text(errorMessage).foregroundColor(.red)
         }
 //        .textFieldStyle(OvalTextFieldStyle())
             .padding()
+            .onAppear {
+                showResendCode = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                    showResendCode = true
+                }
+            }
 
     }
 }

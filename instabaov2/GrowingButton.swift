@@ -13,10 +13,21 @@ struct GrowingButton: ButtonStyle {
         configuration.label
             .padding()
             .background(colorScheme == .light ? Color.white : Color.black)
-            .border(colorScheme == .light ? Color.black : Color.white, width:2)
+            .border(colorScheme == .light ? Color.black : Color.white, width:1)
             .foregroundColor(colorScheme == .light ? Color.black : Color.white)
 //            .fontWeight(.bold)
             .scaleEffect(configuration.isPressed ? 1.2 : 1)
             .animation(.easeOut(duration: 0.2), value: configuration.isPressed)
     }
+}
+
+#Preview {
+    VStack {
+        Button(action: {
+//                authModel.sendVerificationRequest(phoneNumber: phoneNumber)
+            }) {
+                Text("Send Code")
+            }
+            
+            .buttonStyle(GrowingButton())    }
 }

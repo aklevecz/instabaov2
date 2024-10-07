@@ -29,11 +29,10 @@ struct ProfileView: View {
             if (authModel.showOTPView) {
                 OTPView(phoneNumber: phoneNumber)
             }
-            Spacer()
         } else {
             VStack {
                 HStack{
-                    TopLineTitle(title: "Profile")
+                    Image("bao-profile-icon-60")
                 }
                 Text(authModel.currentUser?.username ?? "Loading...")
                     .font(.title)

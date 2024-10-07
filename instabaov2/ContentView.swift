@@ -31,10 +31,8 @@ struct ContentView: View {
     
     var body: some View {
         TabView(selection: $selection) {
-            ZStack(alignment: .top) {
-                Image("bao-head-60")
+            VStack {
                 ChatView()
-                    .padding(.top, 70)
 //                TopLineTitle(title: "Chat")
             }
             .tabItem {

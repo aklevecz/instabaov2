@@ -17,32 +17,15 @@ struct InstaItem: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Placeholder
                 Rectangle()
-                    .fill(Color.gray.opacity(0.2))
+                    .fill(Color.gray.opacity(0.0))
                     .aspectRatio(1, contentMode: .fit)
-
                 Group {
                     if loader.isLoading {
                         ProgressView()
                     } else if item.isVideo {
-                        if let player = loader.videoPlayer {
-                            VideoPlayerView(player: player)
-                                .aspectRatio(aspectRatio, contentMode: .fit)
-                                .onAppear {
-                                    setupPlayerForLooping(player)
-                                }
-                                .onDisappear {
-                                    player.pause()
-                                }
-                                .onTapGesture {
-                                    if player.timeControlStatus == .paused {
-                                        player.play()
-                                    } else {
-                                        player.pause()
-                                    }
-                                }
-                        }
+                        VideoPlayerView(loader: loader)
+                            .aspectRatio(aspectRatio, contentMode: .fit)
                     } else {
                         if let image = loader.image {
                             Image(uiImage: image)
@@ -54,51 +37,61 @@ struct InstaItem: View {
                         }
                     }
                 }
-                .frame(width: geometry.size.width, height: geometry.size.width / aspectRatio)
             }
-            .frame(width: geometry.size.width, height: geometry.size.width / aspectRatio)
-            .animation(.easeInOut(duration: 0.3), value: aspectRatio)
         }
         .aspectRatio(aspectRatio, contentMode: .fit)
         .onAppear {
             loader.load()
         }
-        .onChange(of: loader.image) { newImage in
-            if let image = newImage {
-                calculateImageAspectRatio(image)
-                isLoaded = true
-            }
-        }
-        .onChange(of: loader.videoPlayer) { newPlayer in
-            if let player = newPlayer {
-                calculateVideoAspectRatio(player)
-                isLoaded = true
-            }
+        .onChange(of: loader.aspectRatio) { newAspectRatio in
+            self.aspectRatio = newAspectRatio
         }
         .fullScreenCover(isPresented: $showFullScreenImage) {
             FullScreenImageView(imageUrl: item.mediaUrl, isPresented: $showFullScreenImage)
         }
     }
+}
 
-    private func calculateImageAspectRatio(_ image: UIImage) {
-        let size = image.size
-        DispatchQueue.main.async {
-            withAnimation(.easeInOut(duration: 0.3)) {
-                self.aspectRatio = size.width / size.height
+struct VideoPlayerView: View {
+    @ObservedObject var loader: MediaLoader
+    @State private var isPlaying: Bool = false
+
+    var body: some View {
+        ZStack {
+            if let player = loader.videoPlayer {
+                PlayerView(player: player)
+                    .onAppear {
+                        setupPlayerForLooping(player)
+                    }
+                    .onDisappear {
+                        player.pause()
+                    }
+                
+                if !isPlaying {
+                    Button(action: {
+                        player.play()
+                        isPlaying = true
+                    }) {
+                        Image(systemName: "play.circle")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 50, height: 50)
+                            .foregroundColor(.white)
+                    }
+                }
+            } else {
+                ProgressView()
             }
         }
-    }
-
-    private func calculateVideoAspectRatio(_ player: AVPlayer) {
-        guard let playerItem = player.currentItem,
-              let track = playerItem.asset.tracks(withMediaType: .video).first else {
-            return
-        }
-        
-        let size = track.naturalSize.applying(track.preferredTransform)
-        DispatchQueue.main.async {
-            withAnimation(.easeInOut(duration: 0.3)) {
-                self.aspectRatio = abs(size.width / size.height)
+        .onTapGesture {
+            if let player = loader.videoPlayer {
+                if player.timeControlStatus == .paused {
+                    player.play()
+                    isPlaying = true
+                } else {
+                    player.pause()
+                    isPlaying = false
+                }
             }
         }
     }
@@ -113,17 +106,18 @@ struct InstaItem: View {
     }
 }
 
-struct VideoPlayerView: UIViewRepresentable {
+struct PlayerView: UIViewRepresentable {
     let player: AVPlayer
     
     func makeUIView(context: Context) -> UIView {
-        return PlayerView(player: player)
+        let view = PlayerUIView(player: player)
+        return view
     }
     
     func updateUIView(_ uiView: UIView, context: Context) {}
 }
 
-class PlayerView: UIView {
+class PlayerUIView: UIView {
     private let playerLayer = AVPlayerLayer()
     
     init(player: AVPlayer) {
@@ -144,5 +138,7 @@ class PlayerView: UIView {
 }
 
 #Preview {
-    InstaItem(item: Item(thumbnailUrl: URL(string:"https://r2.baos.haus/baostagram/7E62B9BB-410B-4CBA-B3EF-64881A2BFEBD/L0/001")!, mediaUrl: URL(string:"https://r2.baos.haus/baostagram/7E62B9BB-410B-4CBA-B3EF-64881A2BFEBD/L0/001")!, creationDate: "2024-09-26T16:39:29-0700", description: "Bao", city: "Los Angeles", state: "CA", isVideo: true))
+//    InstaItem(item: Item(thumbnailUrl: URL(string:"https://r2.baos.haus/baostagram/7E62B9BB-410B-4CBA-B3EF-64881A2BFEBD/L0/001")!, mediaUrl: URL(string:"https://r2.baos.haus/baostagram/7E62B9BB-410B-4CBA-B3EF-64881A2BFEBD/L0/001")!, creationDate: "2024-09-26T16:39:29-0700", description: "Bao", city: "Los Angeles", state: "CA", isVideo: true))
+    
+    InstaItem(item: Item(thumbnailUrl: URL(string:"https://r2.baos.haus/baostagram/0238100A-A6BB-4224-8FF9-C44FD9678C74/L0/001")!, mediaUrl: URL(string:"https://r2.baos.haus/baostagram/0238100A-A6BB-4224-8FF9-C44FD9678C74/L0/001")!, creationDate: "2024-09-26T16:39:29-0700", description: "Bao", city: "Los Angeles", state: "CA", isVideo: false))
 }

@@ -18,8 +18,8 @@ struct ARViewer: View {
             if isLoading {
                 ProgressView("Loading configuration...")
             } else {
-                ARViewWrapper(arView: arModel.arView)
-                    .edgesIgnoringSafeArea(.all)
+//                ARViewWrapper(arView: arModel.arView)
+//                    .edgesIgnoringSafeArea(.all)
 
                 VStack {
                     Spacer()

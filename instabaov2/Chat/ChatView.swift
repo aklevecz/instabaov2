@@ -33,7 +33,8 @@ struct ChatView: View {
 //        Button("Show Bubbe") {
 //            isWaitingForResponse = true
 //        }
-        Text(isWaitingForResponse ? "Waiting for response..." : "")
+
+//        Text(isWaitingForResponse ? "Waiting for response..." : "")
         if requestInProgress {
             ProgressView()
                 .scaleEffect(5)
@@ -50,6 +51,7 @@ struct ChatView: View {
             }
         }
         if authModel.currentUser?.phoneNumber != nil {
+            Image("bao-head-60")
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
