@@ -91,6 +91,7 @@ class InstaModel: ObservableObject {
                 return item
             }
 //            print(items)
+            displayedItems = []
             currentPage = 0
             loadNextPage()
         } catch {
